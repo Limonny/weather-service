@@ -17,9 +17,9 @@ public class WeatherController {
     private final WeatherService weatherService;
 
     @GetMapping
-    public ResponseEntity<WeatherHistory> getTemperature() {
+    public ResponseEntity<String> getTemperature() {
         WeatherHistory weatherHistory = weatherService.getByDate();
 
-        return new ResponseEntity<>(weatherHistory, HttpStatus.OK);
+        return new ResponseEntity<>(weatherHistory.getTemperature(), HttpStatus.OK);
     }
 }
