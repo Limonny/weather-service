@@ -43,7 +43,7 @@ public class WeatherService {
                     int index = str.indexOf("weather__temp");
                     currentTemperature = str
                             .substring(index + 15, index + 18)
-                            .replaceAll("[^0-9+-]", "");
+                            .replaceAll("[^0-9+−]", "");
                     break;
                 }
             }
@@ -51,7 +51,7 @@ public class WeatherService {
             throw new RuntimeException("Error occurred during temperature read");
         }
 
-        if (currentTemperature == null || !currentTemperature.matches("^[+-]?[0-9]{1,2}$")) {
+        if (currentTemperature == null || !currentTemperature.matches("^[+−]?[0-9]{1,2}$")) {
             throw new RuntimeException("Temperature retrieval error. " + currentTemperature + " is not a valid temperature.");
         }
 
