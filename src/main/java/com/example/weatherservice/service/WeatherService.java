@@ -1,5 +1,6 @@
 package com.example.weatherservice.service;
 
+import com.example.weatherservice.exception.TemperatureRetrievalException;
 import com.example.weatherservice.model.WeatherHistory;
 import com.example.weatherservice.repository.WeatherHistoryRepository;
 import lombok.AllArgsConstructor;
@@ -12,6 +13,8 @@ import java.net.URL;
 import java.time.LocalDate;
 import java.util.Optional;
 
+import static org.springframework.http.HttpStatus.BAD_GATEWAY;
+
 @Service
 @AllArgsConstructor
 public class WeatherService {
@@ -20,19 +23,23 @@ public class WeatherService {
 
     public WeatherHistory getByDate() {
         WeatherHistory weatherHistory;
-        Optional<WeatherHistory> opt = weatherHistoryRepository.findById(LocalDate.now());
+        Optional<WeatherHistory> opt;
 
-        if (opt.isEmpty()) {
-            weatherHistory = create();
+        synchronized (this) {
+            opt = weatherHistoryRepository.findById(LocalDate.now());
+
+            if (opt.isEmpty()) {
+                weatherHistory = create();
+                return weatherHistory;
+            }
         }
-        else {
-            weatherHistory = opt.get();
-        }
+
+        weatherHistory = opt.get();
 
         return weatherHistory;
     }
 
-    public WeatherHistory create() {
+    private WeatherHistory create() {
         WeatherHistory weatherHistory = new WeatherHistory();
 
         String currentTemperature = null;
@@ -48,11 +55,11 @@ public class WeatherService {
                 }
             }
         } catch (IOException e) {
-            throw new RuntimeException("Error occurred during temperature read");
+            throw new TemperatureRetrievalException(BAD_GATEWAY, "Error occurred during temperature read. Try again later.");
         }
 
         if (currentTemperature == null || !currentTemperature.matches("^[+−]?[0-9]{1,2}$")) {
-            throw new RuntimeException("Temperature retrieval error. " + currentTemperature + " is not a valid temperature.");
+            throw new TemperatureRetrievalException(BAD_GATEWAY, "Temperature retrieval error. " + currentTemperature + " is not a valid temperature.");
         }
 
         weatherHistory.setDate(LocalDate.now());
