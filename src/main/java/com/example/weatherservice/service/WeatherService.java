@@ -4,12 +4,14 @@ import com.example.weatherservice.exception.TemperatureRetrievalException;
 import com.example.weatherservice.model.WeatherHistory;
 import com.example.weatherservice.repository.WeatherHistoryRepository;
 import lombok.AllArgsConstructor;
+import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.URL;
+import java.sql.SQLException;
 import java.time.LocalDate;
 import java.util.Optional;
 
@@ -21,22 +23,11 @@ public class WeatherService {
 
     private final WeatherHistoryRepository weatherHistoryRepository;
 
+    @Retryable(value = {SQLException.class})
     public WeatherHistory getByDate() {
-        WeatherHistory weatherHistory;
-        Optional<WeatherHistory> opt;
+        Optional<WeatherHistory> opt = weatherHistoryRepository.findById(LocalDate.now());
 
-        synchronized (this) {
-            opt = weatherHistoryRepository.findById(LocalDate.now());
-
-            if (opt.isEmpty()) {
-                weatherHistory = create();
-                return weatherHistory;
-            }
-        }
-
-        weatherHistory = opt.get();
-
-        return weatherHistory;
+        return opt.orElseGet(this::create);
     }
 
     private WeatherHistory create() {
